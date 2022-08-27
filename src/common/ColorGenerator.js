@@ -31,8 +31,7 @@ const color = [
     'seagreen',
     'slateblue',
     'slategray',
-    'violet',
-
+    'violet'
 ]
 export const generateColor = () => {
     return color[Math.floor(Math.random()*color.length)];
