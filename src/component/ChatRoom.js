@@ -115,7 +115,8 @@ const ChatRoom = () => {
     userData.avatarColor = generateColor();
     console.log(userData.avatarColor);
     setUserData({ ...userData });
-    let Sock = new SockJS('http://localhost:8080/websocket');
+    // let Sock = new SockJS('http://localhost:8080/websocket');
+    let Sock = new SockJS('http://ec2-3-37-243-198.ap-northeast-2.compute.amazonaws.com:8080/websocket');
     stompClient = over(Sock);
     stompClient.connect({}, onConnected, onError);
   }
