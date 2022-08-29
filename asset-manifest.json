@@ -1,13 +1,13 @@
 {
   "files": {
     "main.css": "/sijangtong-client/static/css/main.67cf74fe.css",
-    "main.js": "/sijangtong-client/static/js/main.8f06ce43.js",
+    "main.js": "/sijangtong-client/static/js/main.c8a06a68.js",
     "index.html": "/sijangtong-client/index.html",
     "main.67cf74fe.css.map": "/sijangtong-client/static/css/main.67cf74fe.css.map",
-    "main.8f06ce43.js.map": "/sijangtong-client/static/js/main.8f06ce43.js.map"
+    "main.c8a06a68.js.map": "/sijangtong-client/static/js/main.c8a06a68.js.map"
   },
   "entrypoints": [
     "static/css/main.67cf74fe.css",
-    "static/js/main.8f06ce43.js"
+    "static/js/main.c8a06a68.js"
   ]
 }
