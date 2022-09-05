@@ -3,6 +3,12 @@
 시작하기 버튼을 누르면 무작위로 조합된 이름과 테마색을 부여 받습니다. <br>
 채팅 내용을 입력하면 현재 접속해있는 모두에게 메세지를 전달합니다. 본인이 전송한 채팅은 오른 쪽에, 타인이 전송한 내용은 왼쪽에 표시됩니다. <br>
 
+
+<!---![My First Board](https://user-images.githubusercontent.com/71186266/188512988-3083ed89-2f7d-4f01-94b1-4bad8fd14780.jpg)--->
+<img src="https://user-images.githubusercontent.com/71186266/188512988-3083ed89-2f7d-4f01-94b1-4bad8fd14780.jpg" width=80%> 
+<img src="https://user-images.githubusercontent.com/71186266/188351720-62bc1226-6fdb-4dfb-b1bc-cb18eb22fea8.png" width=70%> 
+<img src="https://user-images.githubusercontent.com/71186266/188351715-0c549b79-097b-4370-8744-0a1748918abf.png" width=70%>
+
 1. **Client**: React를 기반으로 구현했습니다. SockJS를 통해 서버의 채널을 구독하여 메세지를 주고 받습니다. 현재는 하나의 구독 채널이 있으므로, 채팅방이 단 한개만 운영됩니다.
 2. **Server**: Spring WebSocket + STOMP로 구현했습니다. 클라이언트의 요청이 오면, 해당 클라이언트에게 특정 채널을 구독하도록 합니다. 메세지 전달 요청이 들어올 경우, 요청자가 요청한 채널을 구독하고 있는 모두에게 메세지를 전달해줍니다. -> **[[시장통 서버 프로젝트 바로가기]](https://github.com/binary-ho/sijangtong-server)**
 3. **Deploy**: AWS EC2 하나의 인스턴스에 클라이언트는 pm2로, 서버는 nohup으로 배포하였습니다. 
