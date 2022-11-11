@@ -20,7 +20,7 @@ const ChatBox = styled.div`
   padding: 20px;
   display: flex;
   flex-direction: row;
-  background-image: ${ AppColors.MAIN_WHITE };
+  background-image: ${AppColors.MAIN_WHITE};
 `
 const Member = styled.li`
   background: ${AppColors.MAIN_WHITE};
@@ -87,10 +87,12 @@ const MessageContent = styled.div`
 var stompClient = null;
 
 const ChatRoom = () => {
-  const [ publicChats, setPublicChats ] = useState([]);
-  const [ privateChats, setPrivateChats ] = useState(new Map());
-  const [ tab ] = useState('CHATROOM');
-  const [ userData, setUserData ] = useState({
+  const [userList, setUserList] = useState([<li></li>]);
+  const [publicChats, setPublicChats] = useState([]);
+  const [privateChats, setPrivateChats] = useState(new Map());
+  const [isEnablePrivateChats] = useState({});
+  const [tab] = useState('CHATROOM');
+  const [userData, setUserData] = useState({
     username: '',
     receiverName: '',
     connected: false,
@@ -100,39 +102,33 @@ const ChatRoom = () => {
 
   const handleValue = (event) => {
     const { value, name } = event.target;
-    setUserData({ ...userData, [name] : value });
+    setUserData({ ...userData, [name]: value });
   }
 
-    
-  const handleMessage = (event) => {
-    const {value}=event.target;
-    setUserData({...userData, 'message' : value});
-  }
-
-  // TODO
   const registerUser = () => {
     userData.username = generateName();
     userData.avatarColor = generateColor();
     console.log(userData.avatarColor);
     setUserData({ ...userData });
-    // let Sock = new SockJS('http://localhost:8080/websocket');
-    let Sock = new SockJS('https://ec2-3-37-243-198.ap-northeast-2.compute.amazonaws.com:8080/websocket');
+    let Sock = new SockJS('http://localhost:8080/websocket');
+
+    // for EC2
+    // let Sock = new SockJS('https://ec2-3-37-243-198.ap-northeast-2.compute.amazonaws.com:8080/websocket');
     stompClient = over(Sock);
     stompClient.connect({}, onConnected, onError);
   }
 
-  // TODO
   const onConnected = () => {
-    setUserData({...userData, 'connected': true});
+    setUserData({ ...userData, 'connected': true });
     stompClient.subscribe('/chatroom/public', onPublicMessageReceived);
-    // stompClient.subscribe('/user/' + userData.username + '/private', onPrivateMessageReceived);
+    if (isEnablePrivateChats) stompClient.subscribe('/user/' + userData.username + '/private', onPrivateMessageReceived);
     userJoin();
   }
 
   const userJoin = () => {
     let chatMessage = {
       senderName: userData.username,
-      status:'JOIN',
+      status: 'JOIN',
       avatarColor: userData.avatarColor
     };
     stompClient.send('/app/message', {}, JSON.stringify(chatMessage));
@@ -144,13 +140,16 @@ const ChatRoom = () => {
 
   const onPublicMessageReceived = (payload) => {
     let payloadData = JSON.parse(payload.body);
-    // window.alert(payload);
-    // window.alert(payload.body);
-    // window.alert('1 ' + payloadData.senderName)
-    // window.alert('2 ' + payloadData.message)
     switch (payloadData.status) {
       case 'JOIN':
-        if (!privateChats.get(payloadData.senderName)) {
+        userList.push(
+          <li className={`member active`}>
+            {payloadData.senderName}
+          </li>
+        );
+        setUserList(userList);
+        console.log(userList);
+        if (isEnablePrivateChats && !privateChats.get(payloadData.senderName)) {
           privateChats.set(payloadData.senderName, []);
           setPrivateChats(new Map(privateChats));
         }
@@ -163,22 +162,21 @@ const ChatRoom = () => {
     }
   }
 
-  // TODO
-  // const onPrivateMessageReceived = (payload) => {
-  //   let payloadData = JSON.parse(payload);
-  //
-  //   if(privateChats.get(payloadData.senderName)) {
-  //     privateChats.get(payloadData.senderName).push(payloadData);
-  //   } else {
-  //     let list =[];
-  //     list.push(payloadData);
-  //     privateChats.set(payloadData.senderName, list);
-  //   }
-  //   setPrivateChats(new Map(privateChats));
-  // }
+  const onPrivateMessageReceived = (payload) => {
+    let payloadData = JSON.parse(payload);
+
+    if (privateChats.get(payloadData.senderName)) {
+      privateChats.get(payloadData.senderName).push(payloadData);
+    } else {
+      let list = [];
+      list.push(payloadData);
+      privateChats.set(payloadData.senderName, list);
+    }
+    setPrivateChats(new Map(privateChats));
+  }
 
   const sendPublicMessage = () => {
-    if(stompClient) {
+    if (stompClient) {
       let chatMessage = {
         senderName: userData.username,
         message: userData.message,
@@ -190,90 +188,84 @@ const ChatRoom = () => {
     }
   }
 
-  // const sendPrivateMessage = () => {
-  //   if (stompClient) {
-  //     let chatMessage = {
-  //       senderName: userData.username,
-  //       receiverName: tab,
-  //       message: userData.message,
-  //       status: 'MESSAGE'
-  //     };
-  //   if(userData.username !== tab) {
-  //     privateChats.get(tab).push(chatMessage);
-  //     setPrivateChats(new Map(privateChats));
-  //   }
-  //   stompClient.send('/app/private-message', {}, JSON.stringify(chatMessage));
-  //   setUserData({...userData, "message": ""});
-  //   }
-  // }
+  const sendPrivateMessage = () => {
+    if (stompClient) {
+      let chatMessage = {
+        senderName: userData.username,
+        receiverName: tab,
+        message: userData.message,
+        status: 'MESSAGE'
+      };
+      if (userData.username !== tab) {
+        privateChats.get(tab).push(chatMessage);
+        setPrivateChats(new Map(privateChats));
+      }
+      stompClient.send('/app/private-message', {}, JSON.stringify(chatMessage));
+      setUserData({ ...userData, "message": "" });
+    }
+  }
 
   return (
     <ChatRoomWrapper>
-      { userData.connected ?
+      {userData.connected ?
         <ChatBox>
           <div className='member-list'>
-            <ul>
-              <Member> { userData.username } </Member>
-              {/*<li className={`member ${ tab === "CHATROOM" && 'active' }`}> { userData.username } </li>*/}
-              {/*<li onClick={() => { setTab('CHATROOM')}} className={`member ${ tab === "CHATROOM" && 'active' }`}> Chatroom </li>*/}
-              {/*{*/}
-              {/*  [...privateChats.keys()].map((name, index) => (*/}
-              {/*    <li onClick={() => { setTab('CHATROOM')}} className={`member ${ tab === name && 'actinever [] any []ve' }`} key={index}>*/}
-              {/*      {name}*/}
-              {/*    </li>*/}
-              {/*  ))*/}
-              {/*}*/}
-            </ul>
+            <Member> {userData.username} </Member>
+            {
+              userList.map((userNameComponent, index) => {
+                return index > 1 ? userNameComponent : null;
+              })
+            }
           </div>
           {
             tab === 'CHATROOM' ?
-            <ChatContentArea>
-              <ChatMessageArea>
-                {
-                  publicChats.map((chat, index) => (
-                    <div>
-                        {/*<div className={chat.senderName === userData.username ? 'avatar self' : 'avatar'} > { chat.senderName } </div>*/}
-                        { chat.senderName !== userData.username ?
+              <ChatContentArea>
+                <ChatMessageArea>
+                  {
+                    publicChats.map((chat, index) => (
+                      <div>
+                        {/* <div className={chat.senderName === userData.username ? 'avatar self' : 'avatar'} > { chat.senderName } </div> */}
+                        {chat.senderName !== userData.username ?
                           <MessageBox key={index} >
-                            <SenderAvatar style={{ backgroundColor: chat.avatarColor }}> { chat.senderName } </SenderAvatar>
-                            <MessageContent> { chat.message }</MessageContent>
+                            <SenderAvatar style={{ backgroundColor: chat.avatarColor }}> {chat.senderName} </SenderAvatar>
+                            <MessageContent> {chat.message}</MessageContent>
                           </MessageBox>
-                            :
+                          :
                           <MessageBox key={index} style={{ float: 'right', backgroundColor: 'lightblue' }}>
-                            <MessageContent> { chat.message }</MessageContent>
+                            <MessageContent> {chat.message}</MessageContent>
                           </MessageBox>
                         }
-                    </div>
+                      </div>
                     ))
+                  }
+                </ChatMessageArea>
+                <SendMessageArea>
+                  <input type='text' className='input-message' name='message' placeholder='채팅 입력..' value={userData.message} onChange={handleValue} />
+                  <button type='button' className='send-button' onClick={sendPublicMessage}> 전송 </button>
+                </SendMessageArea>
+              </ChatContentArea>
+              :
+              <div className='chat-content'>
+                {
+                  [...publicChats.get(tab)].map((chat, index) => (
+                    <li className='message' key={index}>
+                      <div className={chat.senderName === userData.username ? 'avatar self' : 'avatar'} > {chat.senderName} </div>
+                      <MessageContent> {chat.message}</MessageContent>
+                    </li>
+                  ))
                 }
-              </ChatMessageArea>
-              <SendMessageArea>
-                <input type='text' className= 'input-message' name= 'message' placeholder= '채팅 입력..' value={userData.message} onChange={handleValue}/>
-                <button type='button' className='send-button' onClick={sendPublicMessage}> 전송 </button>
-              </SendMessageArea>
-            </ChatContentArea>
-            :
-            <div className='chat-content'>
-              {
-                [...publicChats.get(tab)].map((chat,index) => (
-                  <li className='message' key={index}>
-                    <div className={chat.senderName === userData.username ? 'avatar self' : 'avatar'} > { chat.senderName } </div>
-                    <MessageContent> { chat.message }</MessageContent>
-                  </li>
-                ))
-              }
-              <div className='send-message'>
-                <input type='text' className='input-message'
-                  name ='message' placeholder={`enter private message for ${tab}`} value={userData.message} onChange={handleValue}/>
-                {/*<button type='button' className='send-button' onClick={sendPrivateMessage}>send</button>*/}
+                <div className='send-message'>
+                  <input type='text' className='input-message'
+                    name='message' placeholder={`enter private message for ${tab}`} value={userData.message} onChange={handleValue} />
+                  {isEnablePrivateChats && <button type='button' className='send-button' onClick={sendPrivateMessage}>send</button>}
+                </div>
               </div>
-            </div>
           }
         </ChatBox>
-      :
-      <EntranceButton type='button' onClick={registerUser}>
-        입장하기
-      </EntranceButton>
+        :
+        <EntranceButton type='button' onClick={registerUser}>
+          입장하기
+        </EntranceButton>
       }
     </ChatRoomWrapper>
   )
