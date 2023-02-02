@@ -74,6 +74,7 @@ const MessageBox = styled.div`
   float:left;
 `
 const EntranceButton = styled.button`
+  margin: 10px;
   border: none;
   padding: 10px;
   background: green;
@@ -84,6 +85,15 @@ const EntranceButton = styled.button`
 const MessageContent = styled.div`
   padding: 5px;
 `
+
+const ButtonListBox = styled.div`
+  padding: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: column; 
+`
+
+
 var stompClient = null;
 
 const ChatRoom = () => {
@@ -98,6 +108,7 @@ const ChatRoom = () => {
     connected: false,
     message: '',
     avatarColor: 'lightpink',
+    chatRoomNumber: '1',
   })
 
   const handleValue = (event) => {
@@ -105,10 +116,11 @@ const ChatRoom = () => {
     setUserData({ ...userData, [name]: value });
   }
 
-  const registerUser = () => {
+  const registerUser = chatRoomNumber => {
     userData.username = generateName();
     userData.avatarColor = generateColor();
-    console.log(userData.avatarColor);
+    userData.chatRoomNumber = chatRoomNumber;
+    // console.log(userData.avatarColor);
     setUserData({ ...userData });
     let Sock = new SockJS('http://localhost:8080/websocket');
 
@@ -120,8 +132,9 @@ const ChatRoom = () => {
 
   const onConnected = () => {
     setUserData({ ...userData, 'connected': true });
-    stompClient.subscribe('/chatroom/public', onPublicMessageReceived);
-    if (isEnablePrivateChats) stompClient.subscribe('/user/' + userData.username + '/private', onPrivateMessageReceived);
+    // stompClient.subscribe(`/chatroom/public`, onPublicMessageReceived);
+    stompClient.subscribe(`/chatroom/` + userData.chatRoomNumber, onPublicMessageReceived);
+    // if (isEnablePrivateChats) stompClient.subscribe('/user/' + userData.username + '/private', onPrivateMessageReceived);
     userJoin();
   }
 
@@ -131,7 +144,7 @@ const ChatRoom = () => {
       status: 'JOIN',
       avatarColor: userData.avatarColor
     };
-    stompClient.send('/app/message', {}, JSON.stringify(chatMessage));
+    stompClient.send(`/app/chatroom/${userData.chatRoomNumber}`, {}, JSON.stringify(chatMessage));
   }
 
   const onError = (error) => {
@@ -181,9 +194,24 @@ const ChatRoom = () => {
         senderName: userData.username,
         message: userData.message,
         status: 'MESSAGE',
-        avatarColor: userData.avatarColor
+        avatarColor: userData.avatarColor,
+        chatRoomNumber: userData.chatRoomNumber
       };
       stompClient.send('/app/message', {}, JSON.stringify(chatMessage));
+      setUserData({ ...userData, 'message': '' });
+    }
+  }
+
+  const sendChatRoomMessage = () => {
+    if (stompClient) {
+      let chatMessage = {
+        senderName: userData.username,
+        message: userData.message,
+        status: 'MESSAGE',
+        avatarColor: userData.avatarColor,
+        chatRoomNumber: userData.chatRoomNumber
+      };
+      stompClient.send(`/app/chatroom-message/${userData.chatRoomNumber}`, {}, JSON.stringify(chatMessage));
       setUserData({ ...userData, 'message': '' });
     }
   }
@@ -241,7 +269,8 @@ const ChatRoom = () => {
                 </ChatMessageArea>
                 <SendMessageArea>
                   <input type='text' className='input-message' name='message' placeholder='채팅 입력..' value={userData.message} onChange={handleValue} />
-                  <button type='button' className='send-button' onClick={sendPublicMessage}> 전송 </button>
+                  {/* <button type='button' className='send-button' onClick={sendPublicMessage}> 전송 </button> */}
+                  <button type='button' className='send-button' onClick={sendChatRoomMessage}> 전송 </button>
                 </SendMessageArea>
               </ChatContentArea>
               :
@@ -263,11 +292,20 @@ const ChatRoom = () => {
           }
         </ChatBox>
         :
-        <EntranceButton type='button' onClick={registerUser}>
-          입장하기
-        </EntranceButton>
+        <ButtonListBox>
+          <EntranceButton type='button' onClick={() => registerUser(1)}>
+            노현근 서버 입장
+          </EntranceButton>
+          <EntranceButton type='button' onClick={() => registerUser(2)}>
+            안승우 서버 입장
+          </EntranceButton>
+          <EntranceButton type='button' onClick={() => registerUser(3)}>
+            장동호 서버 입장
+          </EntranceButton>
+        </ButtonListBox>
+
       }
-    </ChatRoomWrapper>
+    </ChatRoomWrapper >
   )
 }
 
